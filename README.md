@@ -1,8 +1,8 @@
 Bookmarks
 =========
 
-View page of Netscape Bookmarks files. Basically an HTML page being able to load
-- offline - a Netscape Bookmarks file, view it in a (tree-like) indented style,
+View page of Netscape Bookmarks files. Basically an HTML page being able to load,
+offline, a Netscape Bookmarks file, view it in a (tree-like) indented style,
 and making it searchable.
 
 The Firefox browser offers simple searchability for bookmarks in a side bar and
