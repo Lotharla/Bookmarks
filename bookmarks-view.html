@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<head>
+<title>Bookmarks</title>
+<style>
+	#panel {
+		display: none;
+		margin-bottom: 10px;
+	}
+	#dimmer {
+        background:#000;
+        opacity:0.5;
+        position:fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        display:none;
+    }
+	#pat {
+		background-image: url(data:image/gif;base64,R0lGODlhDwAPAOYAAP/////+/P/Ymu+dLLbl/+zs6rzw/9///9n//97//4uLmufp9L/z//3///Hx8PX+//b//4qBiO7//+7v8ZaDZ+7v9oqAi7Pn/9jW1q14LbHk/9T//8vS56GjsND//7re5+r//+f9/7vM5vb3/e3//5iXpuL//9r//7rq/M/0/7Xq/6zE6KbM46Oksu7r7NLP1PCcKavF05NuOJumvOqfOJSjv/DRp5ux2P/ZnKe41MXO4Zmqy77y/7fh94iCkuzs6efm5cr6///++ba3v7jq/t3///rt3OXn8rS3v5KVp8nQ5Ljt/6CjtLjI5Le2xMT3/5+8zrXl/+/u86/e9rGwtM7//+vr6bzx//r5+6Cir6x4Lv/9+ax3LMr7/6zg/9/e58TFx8Dz/ujm5pSVoZ+ituX3/9bt94iCkdnZ1++cK8Px/7zh9bni77Srnpmpvs7L0PLy8Ju84tXX6rvE193f7QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAAPAA8AAAeSgACCg4SFhgAVOjlNHFKHAEdKZmoqUzdfhlgiD2VRGktEOy6FC2spBDxdQVUsToVyKF4GHgkmRWxMhXQ9FwwnEhAgHyWFIytXTwgkAA1uVIRbRmRxYRsHIXMKQIMBAjQUSTVQMTNjaNw4A1wRYGIvbxhwg0ICaVo+LQ6PNjAZZ1lWHgFoI8NChx8CAUxAMqRAwkAAOw==);
+		background-repeat: no-repeat;
+		background-position: right;
+		padding-right: 20px;
+	}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="bookmarks-view.js"></script>
+<script>
+	var cookie = "bookmarks=";
+	function setCookie(value) {
+		var days = arguments.length > 1 ? arguments[1] : 1;
+		var date = new Date();
+    	date.setTime(date.getTime() + (days * 24*60*60*1000));
+    	var expires = "expires=" + date.toGMTString();
+    	document.cookie = cookie + value + "; " + expires;
+	}
+	function getCookie() {
+		var value = "bookmarks.html";
+    	var cookies = document.cookie.split(';');
+		for(var i = 0; i < cookies.length; i++) {
+		    var c = cookies[i].trim();
+		    if (c.indexOf(cookie) == 0 && c.length > cookie.length) {
+				value = c.substring(cookie.length, c.length);
+			}
+		}
+		return value;
+	}
+	function setUrl(fileName) {
+		if (arguments.length > 1) {
+			$('#dir').val(arguments[1]);
+		}
+		$('#url').val(fileName);
+		setCookie(fileName);
+	}
+	function getUrl() {
+		var dir = $('#dir').val();
+		var url = (dir.length > 0 ? dir + "/" : "") + $('#url').val();
+		console.log("url: " + url);
+		return url;
+	}
+	function dim(bool) {
+		document.getElementById('dimmer').style.display=(bool?'block':'none');
+	}
+	function openPanel() {
+		$("#panel").slideDown("slow");
+		$("#upload_target").slideUp("fast");
+	}
+	function closePanel() {
+		$("#panel").slideUp("slow");
+		$("#upload_target").slideUp("fast");
+	}
+	function message() {
+		if (arguments.length < 1)
+			return $('#msg').val();
+		else
+			$('#msg').val(arguments[0]);
+	}
+	function timing(msg) {
+		if (arguments.length < 1) 
+			timer(time());
+		else
+			message(msg + timer() + " ms");
+	}
+	function pattern() {
+		if (arguments.length < 1)
+			return $('#pat').val();
+		else
+			$('#pat').val(arguments[0]);
+	}
+	function whatString() {
+		if (arguments.length < 1)
+			return $("input:radio[name='what']:checked").val();
+		else {
+			var what = arguments[0];
+			what = isDefined(what) && what.length > 0 ? what : 'links';
+			$("input:radio[name='what'][value=" + quoted(what) + "]").prop("checked", true);
+		}
+	}
+	function useRegex() {
+		if (arguments.length < 1)
+			return $("#rex").is(':checked');
+		else {
+			var rex = arguments[0] == 'true';
+			$("#search input[name='rex']").prop("checked", rex);
+		}
+	}
+	function caseSensitivity() {
+		if (arguments.length < 1)
+			return $("#sens").is(':checked');
+		else {
+			var sens = arguments[0] == 'true';
+			$("#search input[name='sens']").prop("checked", sens);
+		}
+	}
+	var options = {
+		pat: '', what: 'links', rex: false, sens: false,
+		dirty: function() {
+			return this.pat.length > 0 || 
+				this.what != 'links' || 
+				this.rex || this.sens;
+		},
+		get: function() {
+			this.pat = pattern();
+			this.what = whatString();
+			this.rex = useRegex();
+			this.sens = caseSensitivity();
+			return this;
+		},
+		set: function(value) {
+			pattern(this.pat);
+			whatString(this.what);
+			useRegex(this.rex);
+			caseSensitivity(this.sens);
+		},
+		save: function(ondirty) {
+			this.get();
+			if (ondirty && !this.dirty())
+				return;
+			var a = document.createElement('a');
+			a.href = window.location.href;
+			var qs = "";
+			for (var prop in this) {
+				if (this.hasOwnProperty(prop) && typeof this[prop] != 'function')
+					qs = (qs.length > 0 ? qs + '&' : '') + prop + "=" + this[prop];
+			}
+			a.search = qs;
+			a.hash = "";
+			window.location.search = a.search;
+		},
+		load: function() {
+			var qs = window.location.search;
+			var parts = qs.substring(1).split('&');
+			for (var i=0; i<parts.length; i++) {
+				var part = parts[i];
+				var pos = part.indexOf('=');
+				if (pos > 0) {
+					var key = part.substring(0, pos);
+					this[key] = part.substring(pos + 1);
+				}
+			}
+			this.set();
+		},
+	};
+	function doSearch() {
+		message('');
+		$("#output").html("");
+		var s = new Search(options.get(), message);
+		if (isDefined(s.found)) {
+			if ($(s.found).children().length > 0) {
+				$('#output').html(s.found);
+			}
+			var msg = message();
+			msg = s.results + " result(s)" + (msg.length > 0 ? ", " + msg : "");
+			message(msg);
+		}
+		$("#pat").focus();
+	}
+	function hasFileReader() {
+		return window.File && window.FileList && window.FileReader;
+	}
+	function repopulate() {
+		timing();
+		$("#bookmarks").html("");
+		if (hasFileReader()) {
+			$("#panel input:submit[name='submit']")
+				.replaceWith(markup("input type='button' onClick='readBookmarksFile();' value='Load'"));
+			openPanel();
+		} else {
+			options.load();
+			setUrl(getCookie(), "");
+			dim(true);
+			$("#bookmarks").load(getUrl(), function(responseTxt,statusTxt,xhr) {
+				if (statusTxt=="error") 
+					message(xhr.statusText);
+				else 
+					followUp();
+				dim(false);
+			});
+		}
+	}
+	function readBookmarksFile() {
+		var files = document.getElementById('file').files;
+		if (!files.length) {
+			alert('Please select a file!');
+			return;
+		}
+    	var file = files[0];
+		var reader = new FileReader();
+		reader.onload = function(event) {
+			$("#bookmarks").html(event.target.result);
+			followUp();
+		};
+		reader.readAsText(file);
+		$("#url").val(file.name);
+		closePanel();
+	}
+	function finishUpload(failed) {
+		if (failed) 
+			$("#upload_target").slideDown("fast");
+		else {
+			var filename = $('#file').val();
+			filename = filename.replace(/^.*[\\\/]/, '');
+			setUrl(filename);
+			options.save();
+			repopulate();
+		}
+	}
+	function followUp() {
+		injectFolding();
+		doSearch();
+		timing("");
+	}
+    $(document).ready(function() {
+		repopulate();
+	    $("#pat").keyup(function(ev) {
+			var code = ev.keyCode || ev.which;
+			if (useRegex()) {
+	 			if (code == 13)
+					doSearch();
+			} 
+			else if (code != 13)
+				doSearch();
+		});
+		$("input[name='what']").change(doSearch);
+		$("input[name='rex']").change(doSearch);
+ 		$("input[name='sens']").change(doSearch);
+		$("#msg").width($("#msg").width() * 0.75);
+   });
+</script>
+</head>
+<body>
+<a id="top" name="top">
+<div id="dimmer"></div>
+<form id="panel" action="bookmarks-view.php" target="upload_target" method="post" enctype="multipart/form-data">
+	<label>Bookmarks file : </label>
+	<input type="text" id="url" readonly />
+	&nbsp;&nbsp;
+	<input type="hidden" name="dir" id="dir">
+	<input type="file" name="file" id="file">
+	<input type="submit" name="submit" value="Upload">
+	&nbsp;&nbsp;
+	<input id="close" type="button" onClick="closePanel();" value="Close">
+	<br>
+	<iframe name="upload_target" id="upload_target" src="#" style="display:none;border:0px solid #fff;"></iframe>
+</form>
+<hr>
+<div id="search">
+	<input type="text" id="pat" autofocus />
+	&nbsp;&nbsp;
+	<input type="radio" id="what" name="what" value="links" checked>links</input>
+	<input type="radio" id="what" name="what" value="folders">folders</input>
+	&nbsp;&nbsp;
+	<input type="text" id="msg" readonly />
+	&nbsp;&nbsp;
+	<input type="checkbox" id="rex" name="rex">reg. expr.</input>
+	<input type="checkbox" id="sens" name="sens">case sens.</input>
+	&nbsp;&nbsp;
+	<button id="load" onclick="openPanel();">Load bookmarks</button>
+</div>
+<div id="output" class="folding">
+</div>
+<hr>
+<div id="bookmarks" class="folding">
+</div>
+</body>
+</html>
