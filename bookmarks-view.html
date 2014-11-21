@@ -116,11 +116,6 @@
 	}
 	var options = {
 		pat: '', what: 'links', rex: false, sens: false,
-		dirty: function() {
-			return this.pat.length > 0 || 
-				this.what != 'links' || 
-				this.rex || this.sens;
-		},
 		get: function() {
 			this.pat = pattern();
 			this.what = whatString();
@@ -133,6 +128,11 @@
 			whatString(this.what);
 			useRegex(this.rex);
 			caseSensitivity(this.sens);
+		},
+		dirty: function() {
+			return this.pat.length > 0 || 
+				this.what != 'links' || 
+				this.rex || this.sens;
 		},
 		save: function(ondirty) {
 			this.get();
@@ -182,7 +182,7 @@
 	}
 	function repopulate() {
 		timing();
-		$("#bookmarks").html("");
+		$(bookmarksSelector()).html("");
 		if (hasFileReader()) {
 			$("#panel input:submit[name='submit']")
 				.replaceWith(markup("input type='button' onClick='readBookmarksFile();' value='Load'"));
@@ -191,7 +191,7 @@
 			options.load();
 			setUrl(getCookie(), "");
 			dim(true);
-			$("#bookmarks").load(getUrl(), function(responseTxt,statusTxt,xhr) {
+			$(bookmarksSelector()).load(getUrl(), function(responseTxt,statusTxt,xhr) {
 				if (statusTxt=="error") 
 					message(xhr.statusText);
 				else 
@@ -209,7 +209,7 @@
     	var file = files[0];
 		var reader = new FileReader();
 		reader.onload = function(event) {
-			$("#bookmarks").html(event.target.result);
+			$(bookmarksSelector()).html(event.target.result);
 			followUp();
 		};
 		reader.readAsText(file);
@@ -277,7 +277,7 @@
 	<input type="checkbox" id="rex" name="rex">reg. expr.</input>
 	<input type="checkbox" id="sens" name="sens">case sens.</input>
 	&nbsp;&nbsp;
-	<button id="load" onclick="openPanel();">Load bookmarks</button>
+	<button id="load" onclick="openPanel();">Open Load</button>
 </div>
 <div id="output" class="folding">
 </div>
