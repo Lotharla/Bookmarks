@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bookmarks QUnit</title>
+<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.15.0.css">
+<script src="http://code.jquery.com/qunit/qunit-1.15.0.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="bookmarks-view.js"></script>
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script>
+	function runTests() {
+		if ($(bookmarksSelector("dl")).length < 1) return;
+		injectFolding();
+		var file = document.getElementById('file').value;
+		QUnit.test( file, function( assert ) {
+			var folders = 0;
+			$(bookmarksSelector("dt>h3")).each(function(index, item) {
+				if (!$(item).length)
+					assert.ok(false, folderPath($(item)));
+				folders += 1;
+			});
+			assert.ok(true, "{0} folder(s)".format(folders));
+			var links = 0;
+			$(bookmarksSelector("dt>a")).each(function(index, item) {
+				var dt = folder($(item));
+				var fp = folderPath($(item));
+				if (!dt.length && isDefined(fp))
+					assert.ok(false, $(item).text() + " < " + fp);
+				links += 1;
+			});
+			assert.ok(true, "{0} link(s)".format(links));
+			var message = function () {
+				if (arguments.length < 1 || !arguments[0].endsWith('ms'))
+					assert.ok(false, arguments[0]);
+			}
+			var cases = [
+				[
+					{pat: '.*', 	rex: true, 	sens: false, 	what: 'links'}, 
+					function(s, c){ 
+						assert.equal(links, s.results, c + ": all links");
+						return undefined
+					}, 
+				], 
+				[
+					{pat: '.*', 	rex: true, 	sens: false, 	what: 'folders'}, 
+					function(s, c){ 
+						assert.equal(folders, s.results, c + ": all folders");
+						return undefined
+					}, 
+				], 
+				[
+					{pat: '', 	rex: false, 	sens: false, 	what: 'links'}, 
+					function(s){ return !isDefined(s.found) }, 
+					function(s){ return "" }, 
+				], 
+				[
+					{pat: 't', 	rex: false, 	sens: false, 	what: 'links'}, 
+					function(s){ return !isDefined(s.found) }, 
+					function(s){ return "" }, 
+				], 
+				[
+					{pat: 'th', 	rex: false, 	sens: false, 	what: 'links'}, 
+					function(s){ 
+						m = matchMarkup(s.found.html(), 'a').length;
+						n = s.results;
+						return n > 0 && m >= n && m <= 2*n
+					}, 
+					function(s){ return ": {0} result(s), {1} decoration(s)".format(n, m) }, 
+				], 
+			];
+			var s, m, n;
+			$.each(cases, function(index, value) {
+				s = new Search(cases[index][0], message);
+				var c = "search {0} ".format(index);
+				var test = cases[index][1](s, c);
+				if (isDefined(test))
+					assert.ok(test, c + cases[index][2](s));
+			});
+			$('#output').html(s.found);
+		});
+	}
+	function handleFiles(files) {
+		var reader = new FileReader();
+		reader.onload = function(event) {
+			$(bookmarksSelector()).html(event.target.result);
+		};
+		var file = files[0];
+		reader.readAsText(file);
+	}
+</script>
+<form>
+	<input type="file" id="file" onchange="handleFiles(this.files)">
+	<input type="button" onClick="runTests();" value="Run Tests">
+</form>
+<hr>
+<div id="output" class="folding">
+</div>
+<hr>
+<div id="bookmarks" class="folding">
+</div>
+</body>
+</html>
+
